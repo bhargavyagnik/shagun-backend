@@ -1,53 +1,59 @@
 import { Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-
-const prisma = new PrismaClient();
+import { 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  updateProfile
+} from 'firebase/auth';
+import { auth } from '../config/firebase';
 
 export const signup = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
 
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-      },
-    });
-
-    // Generate token
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
+    // Create user in Firebase
+    const firebaseUser = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
     );
+
+    await sendEmailVerification(auth.currentUser).catch((err) =>
+      console.log(err)
+    );
+
+    // Update Firebase user profile to include name
+    await updateProfile(auth.currentUser, { displayName: name }).catch(
+      (err) => console.log(err)
+    );
+
+    // Get Firebase ID token
+    const token = await firebaseUser.user.getIdToken();
 
     res.status(201).json({
       message: 'User created successfully',
       token,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
+        uid: firebaseUser.user.uid,
+        name: firebaseUser.user.displayName,
+        email: firebaseUser.user.email,
       },
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Error creating user' });
+  } catch (error: any) {
+    console.error('Signup error:', error);
+    
+    // Handle specific Firebase auth errors
+    if (error.code === 'auth/email-already-in-use') {
+      return res.status(400).json({ 
+        message: 'Email already in use',
+        error: error.message 
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Error creating user',
+      error: error.message 
+    });
   }
 };
 
@@ -55,38 +61,39 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    // Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    // Check password
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res.status(400).json({ message: 'Invalid credentials' });
-    }
-
-    // Generate token
-    const token = jwt.sign(
-      { id: user.id, email: user.email },
-      process.env.JWT_SECRET!,
-      { expiresIn: '24h' }
+    // Sign in with Firebase
+    const firebaseUser = await signInWithEmailAndPassword(
+      auth,
+      email,
+      password
     );
+
+    // Get Firebase ID token
+    const token = await firebaseUser.user.getIdToken();
 
     res.json({
       message: 'Login successful',
       token,
       user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
+        uid: firebaseUser.user.uid,
+        name: firebaseUser.user.displayName,
+        email: firebaseUser.user.email,
       },
     });
-  } catch (error) {
-    res.status(500).json({ message: 'Error logging in' });
+  } catch (error: any) {
+    console.error('Login error:', error);
+    
+    // Handle specific Firebase auth errors
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      return res.status(401).json({ 
+        message: 'Invalid email or password',
+        error: error.message 
+      });
+    }
+    
+    res.status(500).json({ 
+      message: 'Error logging in',
+      error: error.message 
+    });
   }
-}; 
+};
