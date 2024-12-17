@@ -6,6 +6,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { adminAuth } from '../config/firebase';
 
 export const signup = async (req: Request, res: Response) => {
   try {
@@ -70,7 +71,6 @@ export const login = async (req: Request, res: Response) => {
 
     // Get Firebase ID token
     const token = await firebaseUser.user.getIdToken();
-
     res.json({
       message: 'Login successful',
       token,
@@ -84,7 +84,7 @@ export const login = async (req: Request, res: Response) => {
     console.error('Login error:', error);
     
     // Handle specific Firebase auth errors
-    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
       return res.status(401).json({ 
         message: 'Invalid email or password',
         error: error.message 
@@ -95,5 +95,108 @@ export const login = async (req: Request, res: Response) => {
       message: 'Error logging in',
       error: error.message 
     });
+  }
+};
+
+
+// Create session cookie
+export const createSessionCookie = async (req: Request, res: Response) => {
+  try {
+    const idToken = req.body.idToken?.toString();
+    
+    // Validate ID token
+    if (!idToken) {
+      return res.status(401).json({ message: 'No ID token provided' });
+    }
+
+    // Set session expiration to 5 days
+    const expiresIn = 60 * 60 * 24 * 5 * 1000;
+
+    // Create the session cookie
+    const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
+    
+    // Set cookie options
+    const options = {
+      maxAge: expiresIn,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Only send cookie over HTTPS in production
+      sameSite: 'strict' as const
+    };
+
+    res.cookie('session', sessionCookie, options);
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Session creation error:', error);
+    res.status(401).json({ message: 'UNAUTHORIZED REQUEST!' });
+  }
+};
+
+// Verify session cookie
+export const verifySession = async (req: Request, res: Response) => {
+  try {
+    const sessionCookie = req.cookies.session || '';
+    
+    if (!sessionCookie) {
+      return res.status(401).json({ message: 'No session cookie found' });
+    }
+
+    // Verify the session cookie and check if it's revoked
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+    
+    res.json({ 
+      status: 'success',
+      user: {
+        uid: decodedClaims.uid,
+        email: decodedClaims.email,
+        // Include other needed user data
+      }
+    });
+  } catch (error) {
+    console.error('Session verification error:', error);
+    res.status(401).json({ message: 'UNAUTHORIZED REQUEST!' });
+  }
+};
+
+// Logout and clear session
+export const logout = async (req: Request, res: Response) => {
+  try {
+    const sessionCookie = req.cookies.session || '';
+    
+    // Clear the session cookie
+    res.clearCookie('session');
+    
+    // If there was a session, revoke the refresh tokens
+    if (sessionCookie) {
+      try {
+        const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
+        await adminAuth.revokeRefreshTokens(decodedClaims.sub);
+      } catch (error) {
+        // Continue with logout even if token verification fails
+        console.error('Error revoking refresh tokens:', error);
+      }
+    }
+    
+    res.json({ status: 'success' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Error during logout' });
+  }
+};
+
+// Middleware to check authentication
+export const requireAuth = async (req: Request, res: Response, next: Function) => {
+  try {
+    const sessionCookie = req.cookies.session || '';
+    
+    if (!sessionCookie) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+    req['user'] = decodedClaims; // Add user data to request object
+    next();
+  } catch (error) {
+    console.error('Auth middleware error:', error);
+    res.status(401).json({ message: 'Authentication required' });
   }
 };

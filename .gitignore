@@ -34,3 +34,6 @@ yarn-error.log*
 
 # Prisma
 /prisma/migrations/
+
+#Firebase adminsdk
+*AccountCredentials*

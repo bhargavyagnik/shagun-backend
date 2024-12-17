@@ -1,33 +1,39 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { adminAuth } from '../config/firebase';
 
 interface AuthRequest extends Request {
   user?: {
-    id: string;
+    uid: string;
     email: string;
+    // Add other Firebase user properties you need
   };
 }
 
-export const authenticateToken = (
+export const authenticateSession = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      id: string;
-      email: string;
+    const sessionCookie = req.cookies.session || '';
+    
+    if (!sessionCookie) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Verify the session cookie and check if it's revoked
+    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+    
+    // Add user data to request object
+    req.user = {
+      uid: decodedClaims.uid,
+      email: decodedClaims.email,
+      // Add other needed user data
     };
-    req.user = decoded;
+    
     next();
   } catch (error) {
-    return res.status(403).json({ message: 'Invalid token' });
+    console.error('Auth middleware error:', error);
+    res.status(401).json({ message: 'Authentication required' });
   }
 }; 
