@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app"
 import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from "firebase-admin/firestore";
 import {getAuth} from 'firebase/auth';
 import dotenv from 'dotenv';
 import * as admin from 'firebase-admin';
@@ -37,5 +38,6 @@ const adminApp = admin.initializeApp({
   })
 });
 const adminAuth = admin.auth(adminApp);
+const admindb = getFirestore(adminApp);
 
-export {app,auth,adminAuth};
+export {app,auth,adminAuth,admindb};

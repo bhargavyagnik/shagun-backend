@@ -1,22 +1,22 @@
 import { Request, Response, NextFunction } from 'express';
 import { adminAuth } from '../config/firebase';
 
-interface AuthRequest extends Request {
-  user?: {
-    uid: string;
-    email: string;
-    // Add other Firebase user properties you need
-  };
-}
 
 export const authenticateSession = async (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
   try {
-    const sessionCookie = req.cookies.session || '';
     
+    const cookie = req.headers.cookie;
+
+    if (!cookie) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    const sessionCookieraw = cookie.split(';').find(pair => pair.startsWith('session='));
+    const sessionCookie = sessionCookieraw.split('=')[1];
     if (!sessionCookie) {
       return res.status(401).json({ message: 'Authentication required' });
     }
