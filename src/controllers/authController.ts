@@ -109,12 +109,11 @@ export const createSessionCookie = async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'No ID token provided' });
     }
 
-    // Set session expiration to 5 days
-    const expiresIn = 60 * 60 * 24 * 5 * 1000;
+    // Set session expiration to 10 days
+    const expiresIn = 60 * 60 * 24 * 10 * 1000;
 
     // Create the session cookie
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
-    
     // Set cookie options
     const options = {
       maxAge: expiresIn,
@@ -127,32 +126,6 @@ export const createSessionCookie = async (req: Request, res: Response) => {
     res.json({ status: 'success' });
   } catch (error) {
     console.error('Session creation error:', error);
-    res.status(401).json({ message: 'UNAUTHORIZED REQUEST!' });
-  }
-};
-
-// Verify session cookie
-export const verifySession = async (req: Request, res: Response) => {
-  try {
-    const sessionCookie = req.cookies.session || '';
-    
-    if (!sessionCookie) {
-      return res.status(401).json({ message: 'No session cookie found' });
-    }
-
-    // Verify the session cookie and check if it's revoked
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
-    
-    res.json({ 
-      status: 'success',
-      user: {
-        uid: decodedClaims.uid,
-        email: decodedClaims.email,
-        // Include other needed user data
-      }
-    });
-  } catch (error) {
-    console.error('Session verification error:', error);
     res.status(401).json({ message: 'UNAUTHORIZED REQUEST!' });
   }
 };
@@ -180,23 +153,5 @@ export const logout = async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Logout error:', error);
     res.status(500).json({ message: 'Error during logout' });
-  }
-};
-
-// Middleware to check authentication
-export const requireAuth = async (req: Request, res: Response, next: Function) => {
-  try {
-    const sessionCookie = req.cookies.session || '';
-    
-    if (!sessionCookie) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
-    req['user'] = decodedClaims; // Add user data to request object
-    next();
-  } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(401).json({ message: 'Authentication required' });
   }
 };
