@@ -1,13 +1,13 @@
 import { Request, Response } from 'express';
-import {admindb  as db} from '../config/firebase';
+import { admindb as db } from '../config/firebase';
 import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 
-interface ContributionData{
-  name:string,
-  amount:Number,
-  relation:string,
-  message:string,
-  createdAt:Date,
+interface ContributionData {
+  name: string,
+  amount: Number,
+  relation: string,
+  message: string,
+  createdAt: Date,
 }
 
 export const addContribution = async (req: Request, res: Response) => {
@@ -15,9 +15,13 @@ export const addContribution = async (req: Request, res: Response) => {
     const { name, amount, relation, message, eventId } = req.body;
 
     if (!eventId) {
+      console.log('Event ID is required');
       return res.status(400).json({ message: 'Event ID is required' });
     }
-    const contributionData : ContributionData={
+
+    console.log(`Adding contribution for event ID: ${eventId}`);
+
+    const contributionData: ContributionData = {
       name,
       amount: Number(amount),
       relation,
@@ -25,7 +29,9 @@ export const addContribution = async (req: Request, res: Response) => {
       createdAt: new Date(),
     }
 
-    const contributionRef = await db.collection('events').doc(eventId).collection('contributions').add({contributionData});
+    const contributionRef = await db.collection('events').doc(eventId).collection('contributions').add({ contributionData });
+
+    console.log(`Contribution added successfully with ID: ${contributionRef.id}`);
 
     res.status(201).json({
       message: 'Contribution added successfully',
@@ -33,9 +39,9 @@ export const addContribution = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Add contribution error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error adding contribution',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -44,8 +50,11 @@ export const getContributions = async (req: Request, res: Response) => {
   try {
     const { eventId } = req.params;
     if (!eventId) {
+      console.log('Event ID is required');
       return res.status(400).json({ message: 'Event ID is required' });
     }
+
+    console.log(`Fetching contributions for event ID: ${eventId}`);
 
     // Query contributions for specific event
     const contributionsSnapshot = await db.collection('events').doc(eventId).collection('contributions').get();
@@ -55,14 +64,16 @@ export const getContributions = async (req: Request, res: Response) => {
       ...doc.data()
     }));
 
+    console.log(`Fetched ${contributions.length} contributions for event ID: ${eventId}`);
+
     res.json({
       contributions
     });
   } catch (error: any) {
     console.error('Get contributions error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error fetching contributions',
-      error: error.message 
+      error: error.message
     });
   }
 };
@@ -72,8 +83,11 @@ export const getTotalContributions = async (req: Request, res: Response) => {
     const { eventId } = req.body;
 
     if (!eventId) {
+      console.log('Event ID is required');
       return res.status(400).json({ message: 'Event ID is required' });
     }
+
+    console.log(`Calculating total contributions for event ID: ${eventId}`);
 
     // Only select the amount field to reduce data transfer
     const contributionsSnapshot = await db.collection('events')
@@ -88,15 +102,17 @@ export const getTotalContributions = async (req: Request, res: Response) => {
       totalAmount += doc.data().amount || 0;
     }
 
+    console.log(`Total contributions for event ID: ${eventId} is ${totalAmount}`);
+
     res.json({
       eventId,
       totalAmount
     });
   } catch (error: any) {
     console.error('Get total contributions error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       message: 'Error calculating total contributions',
-      error: error.message 
+      error: error.message
     });
   }
 };

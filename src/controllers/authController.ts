@@ -11,6 +11,7 @@ import { adminAuth } from '../config/firebase';
 export const signup = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
+    console.log(`Signup attempt for email: ${email}`);
 
     // Create user in Firebase
     const firebaseUser = await createUserWithEmailAndPassword(
@@ -20,17 +21,18 @@ export const signup = async (req: Request, res: Response) => {
     );
 
     await sendEmailVerification(auth.currentUser).catch((err) =>
-      console.log(err)
+      console.log(`Error sending email verification: ${err}`)
     );
 
     // Update Firebase user profile to include name
     await updateProfile(auth.currentUser, { displayName: name }).catch(
-      (err) => console.log(err)
+      (err) => console.log(`Error updating profile: ${err}`)
     );
 
     // Get Firebase ID token
     const token = await firebaseUser.user.getIdToken();
 
+    console.log(`User created successfully: ${firebaseUser.user.uid}`);
     res.status(201).json({
       message: 'User created successfully',
       token,
@@ -61,6 +63,7 @@ export const signup = async (req: Request, res: Response) => {
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+    console.log(`Login attempt for email: ${email}`);
 
     // Sign in with Firebase
     const firebaseUser = await signInWithEmailAndPassword(
@@ -71,6 +74,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Get Firebase ID token
     const token = await firebaseUser.user.getIdToken();
+    console.log(`Login successful for user: ${firebaseUser.user.uid}`);
     res.json({
       message: 'Login successful',
       token,
@@ -103,6 +107,7 @@ export const login = async (req: Request, res: Response) => {
 export const createSessionCookie = async (req: Request, res: Response) => {
   try {
     const idToken = req.body.idToken?.toString();
+    console.log(`Creating session cookie for ID token: ${idToken}`);
     
     // Validate ID token
     if (!idToken) {
@@ -123,6 +128,7 @@ export const createSessionCookie = async (req: Request, res: Response) => {
     };
 
     res.cookie('session', sessionCookie, options);
+    console.log(`Session cookie created successfully`);
     res.json({ status: 'success' });
   } catch (error) {
     console.error('Session creation error:', error);
@@ -136,6 +142,7 @@ export const logout = async (req: Request, res: Response) => {
     const cookie = req.headers.cookie;
     const sessionCookieraw = cookie.split(';').find(pair => pair.startsWith('session='));
     const sessionCookie = sessionCookieraw.split('=')[1];
+    console.log(`Logout attempt for session cookie: ${sessionCookie}`);
     
     // Clear the session cookie
     res.clearCookie('session');
@@ -145,6 +152,7 @@ export const logout = async (req: Request, res: Response) => {
       try {
         const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
         await adminAuth.revokeRefreshTokens(decodedClaims.sub);
+        console.log(`Refresh tokens revoked for user: ${decodedClaims.sub}`);
       } catch (error) {
         // Continue with logout even if token verification fails
         console.error('Error revoking refresh tokens:', error);
