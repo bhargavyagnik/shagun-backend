@@ -43,7 +43,6 @@ export const addContribution = async (req: Request, res: Response) => {
 export const getContributions = async (req: Request, res: Response) => {
   try {
     const { eventId } = req.body;
-
     if (!eventId) {
       return res.status(400).json({ message: 'Event ID is required' });
     }
