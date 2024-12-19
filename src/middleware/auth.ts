@@ -1,7 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { adminAuth } from '../config/firebase';
 
-
 export const authenticateSession = async (
   req: Request,
   res: Response,
@@ -34,6 +33,23 @@ export const authenticateSession = async (
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
+    const cookie = req.headers.cookie;
+    const sessionCookieraw = cookie.split(';').find(pair => pair.startsWith('session='));
+    const sessionCookie = sessionCookieraw.split('=')[1];
+    
+    // Clear the session cookie
+    res.clearCookie('session');
+    
+    // If there was a session, revoke the refresh tokens
+    if (sessionCookie) {
+      try {
+        const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
+        await adminAuth.revokeRefreshTokens(decodedClaims.sub);
+      } catch (error) {
+        // Continue with logout even if token verification fails
+        console.error('Error revoking refresh tokens:', error);
+      }
+    }
     res.status(401).json({ message: 'Authentication required' });
   }
 }; 
