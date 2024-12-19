@@ -133,7 +133,9 @@ export const createSessionCookie = async (req: Request, res: Response) => {
 // Logout and clear session
 export const logout = async (req: Request, res: Response) => {
   try {
-    const sessionCookie = req.cookies.session || '';
+    const cookie = req.headers.cookie;
+    const sessionCookieraw = cookie.split(';').find(pair => pair.startsWith('session='));
+    const sessionCookie = sessionCookieraw.split('=')[1];
     
     // Clear the session cookie
     res.clearCookie('session');
