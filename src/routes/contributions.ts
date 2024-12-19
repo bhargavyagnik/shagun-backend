@@ -6,7 +6,7 @@ import { authenticateSession } from '../middleware/auth';
 const router = express.Router();
 
 router.post('/add',addContribution);
-router.get('/get',authenticateSession,getContributions);
+router.get('/get/:eventId',authenticateSession,getContributions);
 router.get('/gettotal',authenticateSession,getTotalContributions);
 
 export default router; 
