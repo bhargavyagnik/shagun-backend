@@ -6,22 +6,18 @@ export const authenticateSession = async (
   res: Response,
   next: NextFunction
 ) => {
+
+  const startTime = performance.now();
+
   try {
     
-    const cookie = req.headers.cookie;
-
-    if (!cookie) {
-      return res.status(401).json({ message: 'Authentication required' });
-    }
-
-    const sessionCookieraw = cookie.split(';').find(pair => pair.startsWith('session='));
-    const sessionCookie = sessionCookieraw.split('=')[1];
-    if (!sessionCookie) {
-      return res.status(401).json({ message: 'Authentication required' });
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      throw new Error('Token not found');
     }
 
     // Verify the session cookie and check if it's revoked
-    const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
+    const decodedClaims = await adminAuth.verifyIdToken(token);
     
     // Add user data to request object
     req.user = {
@@ -33,23 +29,14 @@ export const authenticateSession = async (
     next();
   } catch (error) {
     console.error('Auth middleware error:', error);
-    const cookie = req.headers.cookie;
-    const sessionCookieraw = cookie.split(';').find(pair => pair.startsWith('session='));
-    const sessionCookie = sessionCookieraw.split('=')[1];
-    
-    // Clear the session cookie
-    res.clearCookie('session');
-    
-    // If there was a session, revoke the refresh tokens
-    if (sessionCookie) {
-      try {
-        const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
-        await adminAuth.revokeRefreshTokens(decodedClaims.sub);
-      } catch (error) {
-        // Continue with logout even if token verification fails
-        console.error('Error revoking refresh tokens:', error);
-      }
-    }
-    res.status(401).json({ message: 'Authentication required' });
+    res.status(401).json({ 
+      success: false,
+      message: 'Authentication required',
+      error: error.message 
+    });
+  } finally{
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    console.log(`Auth middleware took ${duration.toFixed(2)}ms to complete`);
   }
 }; 

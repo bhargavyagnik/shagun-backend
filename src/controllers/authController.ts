@@ -11,6 +11,7 @@ import { adminAuth } from '../config/firebase';
 export const signup = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
+    console.log("signup", req.body);
     console.log(`Signup attempt for email: ${email}`);
 
     // Create user in Firebase
@@ -122,7 +123,7 @@ export const createSessionCookie = async (req: Request, res: Response) => {
     // Set cookie options
     const options = {
       maxAge: expiresIn,
-      httpOnly: true,
+      //httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Only send cookie over HTTPS in production
       sameSite: 'strict' as const
     };

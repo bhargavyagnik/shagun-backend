@@ -195,6 +195,7 @@ export const delEvent = async (req: Request, res: Response) => {
 
 // Get all events for a user
 export const getAllEvents = async (req: Request, res: Response) => {
+  const startTime = performance.now();
   try {
     const userId = req.user?.uid;
 
@@ -231,5 +232,9 @@ export const getAllEvents = async (req: Request, res: Response) => {
       message: 'Failed to fetch events',
       error: error.message
     });
+  } finally{
+    const endTime = performance.now();
+    const duration = endTime - startTime;
+    console.log(`getAllEvents took ${duration.toFixed(2)}ms to complete`);
   }
 };
