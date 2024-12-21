@@ -37,3 +37,4 @@ yarn-error.log*
 
 #Firebase adminsdk
 *AccountCredentials*
+.vercel
