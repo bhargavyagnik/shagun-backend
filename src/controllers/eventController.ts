@@ -21,8 +21,7 @@ interface EventWithStats extends EventData {
 async function getContributionStats(eventId: string) {
   const contributionsSnapshot = await db.collection('events').doc(eventId).collection('contributions').get();
   const contributionsCount = contributionsSnapshot.size;
-  const totalAmount = contributionsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
-  
+  const totalAmount = contributionsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().contributionData.amount || 0), 0);
   return { contributionsCount, totalAmount };
 }
 
@@ -99,6 +98,43 @@ export const getEvent = async (req: Request, res: Response) => {
     res.status(200).json({
       success: true,
       event: eventWithStats
+    });
+  } catch (error) {
+    console.error('Failed to fetch event:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch event',
+      error: error.message
+    });
+  }
+};
+
+
+export const getPublicEvent = async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.params;
+
+    console.log(`Fetching event with ID: ${eventId}}`);
+
+    const eventDoc = await db.collection('events').doc(eventId).get();
+
+    // Verify ownership
+    if (!eventDoc.exists) {
+      console.log(`Event not found event ID: ${eventId}`);
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Event not found' 
+      });
+    }
+    const eventWithStats: EventData = {
+      ...eventDoc.data() as EventData,
+    };
+
+    console.log(`Event fetched successfully with ID: ${eventId}`);
+
+    res.status(200).json({
+      success: true,
+      data: eventWithStats
     });
   } catch (error) {
     console.error('Failed to fetch event:', error.message);
@@ -223,7 +259,7 @@ export const getAllEvents = async (req: Request, res: Response) => {
 
     res.status(200).json({
       success: true,
-      events: eventsWithStats
+      data: eventsWithStats
     });
   } catch (error) {
     console.error('Failed to fetch events:', error.message);
@@ -232,9 +268,5 @@ export const getAllEvents = async (req: Request, res: Response) => {
       message: 'Failed to fetch events',
       error: error.message
     });
-  } finally{
-    const endTime = performance.now();
-    const duration = endTime - startTime;
-    console.log(`getAllEvents took ${duration.toFixed(2)}ms to complete`);
   }
 };

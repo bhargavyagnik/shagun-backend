@@ -35,7 +35,8 @@ export const addContribution = async (req: Request, res: Response) => {
 
     res.status(201).json({
       message: 'Contribution added successfully',
-      contributionId: contributionRef.id
+      contributionId: contributionRef.id,
+      success: true
     });
   } catch (error: any) {
     console.error('Add contribution error:', error);
@@ -61,7 +62,11 @@ export const getContributions = async (req: Request, res: Response) => {
 
     const contributions = contributionsSnapshot.docs.map(doc => ({
       id: doc.id,
-      ...doc.data()
+      name: doc.data().contributionData.name,
+      amount: doc.data().contributionData.amount,
+      relation: doc.data().contributionData.relation,
+      message: doc.data().contributionData.message,
+      createdAt: doc.data().contributionData.createdAt
     }));
 
     console.log(`Fetched ${contributions.length} contributions for event ID: ${eventId}`);
