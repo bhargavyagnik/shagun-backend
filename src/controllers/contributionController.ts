@@ -72,7 +72,7 @@ export const getContributions = async (req: Request, res: Response) => {
     console.log(`Fetched ${contributions.length} contributions for event ID: ${eventId}`);
 
     res.json({
-      contributions
+      data: contributions
     });
   } catch (error: any) {
     console.error('Get contributions error:', error);
