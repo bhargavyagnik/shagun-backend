@@ -11,22 +11,25 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: 'http://localhost:3000', // Your frontend URL
+  origin: true, // Your frontend URL
   credentials: true, // Allow credentials
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(express.json());
 
+app.get('/', (req, res) => {
+  res.status(200).send('OK');
+});
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/contributions', contributionRoutes);
 
-const PORT = process.env.PORT || 3001;
+const PORT = Number(process.env.PORT) || 8080;
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-export default app; 
+export default app;
