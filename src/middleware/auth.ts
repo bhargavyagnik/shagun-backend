@@ -1,6 +1,17 @@
 import { Request, Response, NextFunction } from 'express';
 import { adminAuth } from '../config/firebase';
 
+declare global {
+  namespace Express {
+    interface Request {
+      user?: {
+        uid: string;
+        email?: string;
+      };
+    }
+  }
+}
+
 export const authenticateSession = async (
   req: Request,
   res: Response,
