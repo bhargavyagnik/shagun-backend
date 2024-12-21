@@ -21,14 +21,18 @@ export const signup = async (req: Request, res: Response) => {
       password
     );
 
-    await sendEmailVerification(auth.currentUser).catch((err) =>
-      console.log(`Error sending email verification: ${err}`)
-    );
+    if (auth.currentUser) {
+      await sendEmailVerification(auth.currentUser).catch((err) =>
+        console.log(`Error sending email verification: ${err}`)
+      );
+    }
 
     // Update Firebase user profile to include name
-    await updateProfile(auth.currentUser, { displayName: name }).catch(
-      (err) => console.log(`Error updating profile: ${err}`)
-    );
+    if (auth.currentUser) {
+      await updateProfile(auth.currentUser, { displayName: name }).catch(
+        (err) => console.log(`Error updating profile: ${err}`)
+      );
+    }
 
     // Get Firebase ID token
     const token = await firebaseUser.user.getIdToken();
@@ -138,31 +142,32 @@ export const createSessionCookie = async (req: Request, res: Response) => {
 };
 
 // Logout and clear session
-export const logout = async (req: Request, res: Response) => {
-  try {
-    const cookie = req.headers.cookie;
-    const sessionCookieraw = cookie.split(';').find(pair => pair.startsWith('session='));
-    const sessionCookie = sessionCookieraw.split('=')[1];
-    console.log(`Logout attempt for session cookie: ${sessionCookie}`);
+// export const logout = async (req: Request, res: Response) => {
+//   try {
+//     const cookie = req.headers.cookie;
+//     if (cookie) {
+//       const sessionCookieraw = cookie.split(';').find(pair => pair.startsWith('session='));
+//       const sessionCookie = sessionCookieraw?.split('=')[1];
+//       console.log(`Logout attempt for session cookie: ${sessionCookie}`);
     
-    // Clear the session cookie
-    res.clearCookie('session');
+//     // Clear the session cookie
+//     res.clearCookie('session');
     
-    // If there was a session, revoke the refresh tokens
-    if (sessionCookie) {
-      try {
-        const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
-        await adminAuth.revokeRefreshTokens(decodedClaims.sub);
-        console.log(`Refresh tokens revoked for user: ${decodedClaims.sub}`);
-      } catch (error) {
-        // Continue with logout even if token verification fails
-        console.error('Error revoking refresh tokens:', error);
-      }
-    }
+//     // If there was a session, revoke the refresh tokens
+//     if (sessionCookie) {
+//       try {
+//         const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie);
+//         await adminAuth.revokeRefreshTokens(decodedClaims.sub);
+//         console.log(`Refresh tokens revoked for user: ${decodedClaims.sub}`);
+//       } catch (error) {
+//         // Continue with logout even if token verification fails
+//         console.error('Error revoking refresh tokens:', error);
+//       }
+//     }
     
-    res.json({ status: 'success' });
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ message: 'Error during logout' });
-  }
-};
+//     res.json({ status: 'success' });
+//   } catch (error) {
+//     console.error('Logout error:', error);
+//     res.status(500).json({ message: 'Error during logout' });
+//   }
+// };

@@ -43,7 +43,7 @@ export const authenticateSession = async (
     res.status(401).json({ 
       success: false,
       message: 'Authentication required',
-      error: error.message 
+      error: (error as Error).message 
     });
   } finally{
     const endTime = performance.now();

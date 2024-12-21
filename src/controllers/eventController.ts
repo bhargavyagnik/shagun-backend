@@ -41,7 +41,7 @@ export const addEvent = async (req: Request, res: Response) => {
       groomName,
       eventDate,
       upiId,
-      userId,
+      userId: userId || '',
       createdAt: new Date(),
       updatedAt: new Date()
     };
@@ -56,11 +56,11 @@ export const addEvent = async (req: Request, res: Response) => {
       message: 'Event created successfully'
     });
   } catch (error) {
-    console.error('Failed to create event:', error.message);
+    console.error('Failed to create event:', (error as Error).message);
     res.status(500).json({
       success: false,
       message: 'Failed to create event',
-      error: error.message
+      error: (error as Error).message
     });
   }
 };
@@ -100,11 +100,11 @@ export const getEvent = async (req: Request, res: Response) => {
       event: eventWithStats
     });
   } catch (error) {
-    console.error('Failed to fetch event:', error.message);
+    console.error('Failed to fetch event:', (error as Error).message);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch event',
-      error: error.message
+      error: (error as Error).message
     });
   }
 };
@@ -137,11 +137,11 @@ export const getPublicEvent = async (req: Request, res: Response) => {
       data: eventWithStats
     });
   } catch (error) {
-    console.error('Failed to fetch event:', error.message);
+    console.error('Failed to fetch event:', (error as Error).message);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch event',
-      error: error.message
+      error: (error as Error).message
     });
   }
 };
@@ -180,11 +180,11 @@ export const modifyEvent = async (req: Request, res: Response) => {
       message: 'Event updated successfully'
     });
   } catch (error) {
-    console.error('Failed to update event:', error.message);
+    console.error('Failed to update event:', (error as Error).message);
     res.status(500).json({
       success: false,
       message: 'Failed to update event',
-      error: error.message
+      error: (error as Error).message
     });
   }
 };
@@ -220,11 +220,11 @@ export const delEvent = async (req: Request, res: Response) => {
       message: 'Event deleted successfully'
     });
   } catch (error) {
-    console.error('Failed to delete event:', error.message);
+    console.error('Failed to delete event:', (error as Error).message);
     res.status(500).json({
       success: false,
       message: 'Failed to delete event',
-      error: error.message
+      error: (error as Error).message
     });
   }
 };
@@ -262,11 +262,11 @@ export const getAllEvents = async (req: Request, res: Response) => {
       data: eventsWithStats
     });
   } catch (error) {
-    console.error('Failed to fetch events:', error.message);
+    console.error('Failed to fetch events:', (error as Error).message);
     res.status(500).json({
       success: false,
       message: 'Failed to fetch events',
-      error: error.message
+      error: (error as Error).message
     });
   }
 };

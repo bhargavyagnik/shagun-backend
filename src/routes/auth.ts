@@ -3,7 +3,7 @@ import {
     signup, 
     login, 
     createSessionCookie,
-    logout, 
+    // logout, 
 } from '../controllers/authController';
 import { authenticateSession } from '../middleware/auth';
 
@@ -13,6 +13,6 @@ const router = express.Router();
 router.post('/signup', signup);
 router.post('/login', login);
 router.post('/session', createSessionCookie);
-router.post('/logout', logout);
+// router.post('/logout', logout);
 
 export default router; 
